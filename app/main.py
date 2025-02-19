@@ -6,6 +6,9 @@ from .database import engine
 from .routers import post, user, auth, vote
 from .config import settings
 
+import subprocess
+from fastapi import FastAPI
+
 from fastapi.middleware.cors import CORSMiddleware
 
 # models.Base.metadata.create_all(bind=engine)
@@ -13,6 +16,11 @@ from fastapi.middleware.cors import CORSMiddleware
 origins = ['*']
 
 app = FastAPI()
+
+@app.on_event("startup")
+async def run_migrations():
+    subprocess.run(["alembic", "upgrade", "head"], check=True)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
