@@ -1,0 +1,100 @@
+create virtual environment:
+PS C:\Users\USER\Desktop\python_api> py -m venv venv
+
+terminal using virtual environment:
+PS C:\Users\USER\Desktop\python_api> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Unrestricted
+PS C:\Users\USER\Desktop\python_api> .\venv\Scripts\Activate.ps1
+
+install fastapi:
+(venv) PS C:\Users\USER\Desktop\python_api> pip install fastapi[all]
+
+basic:
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/") -- route/path operation, @  operator reference the fastapi instance, get method.. post/put/delete, slash is the path
+async def root(): -- async = optional, asynchronous task like api call & root is function name, can be anything
+    return {"message": "Hello World"} -- dictionary will be converted to json
+
+open live server:
+uvicorn main:app (main name of file, app is from basic/instance of the fastapi)
+
+everytime we change code, need to restart the server, fix by
+uvicorn main:app --reload (only in dev env)
+
+HTTP GET VS POST:
+Post will send data along with its request (eg: creating an account w/ username etc)
+Get will send get request only
+
+C - POST - /posts or /posts/{id}
+R - GET - /posts or /posts/{id}
+U - PUT(all data)/PATCH(updated data only) - /posts/{id}
+D - DELETE - /posts/{id}
+
+
+JWT TOKEN:
+- instead of saving in the database that user has logged in, when user logs in, it will
+  first check if user/pass is same as database.
+- if it is credible, then API will send JWT token to the user's client that consists of:
+
+    1. Header (hashing format & JWT)
+    2. Payload (data like user id & role)
+    3. Signature (combination of Header, Payload & Secret Code)
+
+- everytime user sends a request to the API, it will always send it along with the JWT token.
+- if the token is correct (Test signature == Signature), then the response is sent back to the user
+
+
+DATABASE MIGRATION:
+- current sqlalchemy, when u have created a table.. u cant edit to add new column, need to drop it then re-add it everytime
+- db migration like alembic circumvent this issue:
+
+1. pip install alembic
+2. in alembic > env.py: 
+        from app.models import Base #Import base instance from models.py
+        from app.config import settings
+
+        config.set_main_option("sqlalchemy.url", f'postgresql+psycopg://{settings.database_username}:{quote_plus(settings.database_password)}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}')
+
+        target_metadata = Base.metadata
+
+3. in alembic.ini:
+        sqlalchemy.url = (empty)
+
+4. alembic cmd:
+        alembic revision -m "create posts table" -- this is where table posts was created with 2 column "id" and "title" only on up(), down() is drop the table when downgraded
+        alembic revision -m "add new columns to posts" -- up() will be empty, but we can add new columns to the table posts, down() is drop the column when downgraded
+
+        it will look like:
+        1a4ab9d7.. -- this is 2nd (add column)
+        fa2c7192.. -- this is 1st (create table)
+
+        after the first revision: current is none.
+        to upgrade: alembic upgrade (revision number)
+        or, we can do: alembic upgrade head (fa2c.. -> 1a4a..)
+
+        same as downgrade.
+
+        can ado do: alembic revision --autogenerate -m "..."
+        this will auto put all in models.py into alembic revision and we can upgrade it..
+        this means we can just add all the modification in models.py and --autogenerate it to upgrade to the db.
+
+
+CORS:
+1. different domains (like google.com and ebay.com) cannot send HTTP request to each other as CORS blocked them.
+2. add:
+        from fastapi.middleware.cors import CORSMiddleware
+
+        app = FastAPI()
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=[],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
+.gitignore
+pip freeze > requirements.txt
+pip install -r requirements.txt
